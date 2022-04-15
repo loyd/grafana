@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ReplaceInFileWebpackPlugin = require('replace-in-file-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
@@ -93,25 +93,20 @@ const getCommonPlugins = (options: WebpackConfigurationOptions) => {
       // both options are optional
       filename: 'styles/[name].css',
     }),
-    new webpack.optimize.OccurrenceOrderPlugin(true),
-    new CopyWebpackPlugin(
-      [
+    new CopyWebpackPlugin({
+      patterns: [
         // If src/README.md exists use it; otherwise the root README
-        { from: hasREADME ? 'README.md' : '../README.md', to: '.', force: true, prority: 1 },
+        { from: hasREADME ? 'README.md' : '../README.md', to: '.', force: true, priority: 1 },
         { from: 'plugin.json', to: '.' },
-        { from: '**/README.md', to: '[path]README.md', priority: 0 },
+        { from: '**/README.md', to: '[path]README.md', priority: 0, noErrorOnMissing: true },
         { from: '../LICENSE', to: '.' },
         { from: '../CHANGELOG.md', to: '.', force: true },
-        { from: '**/*.json', to: '.' },
-        { from: '**/*.svg', to: '.' },
-        { from: '**/*.png', to: '.' },
-        { from: '**/*.html', to: '.' },
+        { from: '**/*.{json, svg, png, html}', to: '.', noErrorOnMissing: true },
         { from: 'img/**/*', to: '.' },
-        { from: 'libs/**/*', to: '.' },
-        { from: 'static/**/*', to: '.' },
+        { from: 'libs/**/*', to: '.', noErrorOnMissing: true },
+        { from: 'static/**/*', to: '.', noErrorOnMissing: true },
       ],
-      { logLevel: options.watch ? 'silent' : 'warn' }
-    ),
+    }),
 
     new ReplaceInFileWebpackPlugin([
       {
@@ -145,9 +140,11 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
   if (options.production) {
     const compressOptions = { drop_console: !options.preserveConsole, drop_debugger: true };
     optimization.minimizer = [
-      new TerserPlugin({ sourceMap: true, terserOptions: { compress: compressOptions } }),
-      new OptimizeCssAssetsPlugin(),
+      new TerserPlugin({ terserOptions: { compress: compressOptions } }),
+      new CssMinimizerPlugin(),
     ];
+    optimization.chunkIds = 'total-size';
+    optimization.moduleIds = 'size';
   } else if (options.watch) {
     plugins.push(new HtmlWebpackPlugin());
   }
@@ -155,11 +152,6 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
   return {
     mode: options.production ? 'production' : 'development',
     target: 'web',
-    node: {
-      fs: 'empty',
-      net: 'empty',
-      tls: 'empty',
-    },
     context: path.join(process.cwd(), 'src'),
     devtool: 'source-map',
     entry: await getEntries(),
@@ -193,14 +185,12 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
       '@grafana/ui',
       '@grafana/runtime',
       '@grafana/data',
-      // @ts-ignore
-      (context, request, callback) => {
+      ({ request }, callback) => {
         const prefix = 'grafana/';
-        if (request.indexOf(prefix) === 0) {
-          return callback(null, request.slice(prefix.length));
+        if (request?.indexOf(prefix) === 0) {
+          return callback(undefined, request.slice(prefix.length));
         }
 
-        // @ts-ignore
         callback();
       },
     ],
@@ -212,39 +202,32 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
     module: {
       rules: [
         {
-          test: /\.tsx?$/,
-          loaders: [
-            {
-              loader: require.resolve('babel-loader'),
-              options: {
-                presets: [[require.resolve('@babel/preset-env'), { modules: false }]],
-                plugins: [require.resolve('babel-plugin-angularjs-annotate')],
-                sourceMaps: true,
-              },
+          test: /\.[tj]sx?$/,
+          use: {
+            loader: require.resolve('babel-loader'),
+            options: {
+              cacheDirectory: true,
+              cacheCompression: false,
+              presets: [
+                [require.resolve('@babel/preset-env'), { modules: false }],
+                [
+                  require.resolve('@babel/preset-typescript'),
+                  {
+                    allowNamespaces: true,
+                    allowDeclareFields: true,
+                  },
+                ],
+                [
+                  require.resolve('@babel/preset-react'),
+                  {
+                    runtime: 'automatic',
+                  },
+                ],
+              ],
+              plugins: [require.resolve('babel-plugin-angularjs-annotate')],
             },
-            {
-              loader: require.resolve('ts-loader'),
-              options: {
-                onlyCompileBundledFiles: true,
-                transpileOnly: true,
-              },
-            },
-          ],
-          exclude: /(node_modules)/,
-        },
-        {
-          test: /\.jsx?$/,
-          loaders: [
-            {
-              loader: require.resolve('babel-loader'),
-              options: {
-                presets: [['@babel/preset-env', { modules: false }]],
-                plugins: ['angularjs-annotate'],
-                sourceMaps: true,
-              },
-            },
-          ],
-          exclude: /(node_modules)/,
+          },
+          exclude: /node_modules/,
         },
         ...getStyleLoaders(),
         {
