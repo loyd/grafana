@@ -6,7 +6,6 @@ import { loadWebpackConfig } from '../../../config/webpack.plugin.config';
 export interface PluginBundleOptions {
   watch: boolean;
   production?: boolean;
-  yarnlink?: boolean;
   preserveConsole?: boolean;
 }
 
