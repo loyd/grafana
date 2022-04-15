@@ -1,6 +1,6 @@
-import webpack = require('webpack');
-import formatWebpackMessages = require('react-dev-utils/formatWebpackMessages');
-import clearConsole = require('react-dev-utils/clearConsole');
+import webpack from 'webpack';
+import formatWebpackMessages from 'react-dev-utils/formatWebpackMessages';
+import clearConsole from 'react-dev-utils/clearConsole';
 import { loadWebpackConfig } from '../../../config/webpack.plugin.config';
 
 export interface PluginBundleOptions {
@@ -10,7 +10,6 @@ export interface PluginBundleOptions {
   preserveConsole?: boolean;
 }
 
-// export const bundlePlugin = ({ watch, production }: PluginBundleOptions) => useSpinner('Bundle plugin', async () => {
 export const bundlePlugin = async ({ watch, production, preserveConsole }: PluginBundleOptions) => {
   const compiler = webpack(
     await loadWebpackConfig({
@@ -31,9 +30,9 @@ export const bundlePlugin = async ({ watch, production, preserveConsole }: Plugi
         console.log('Compiling...');
       });
 
-      compiler.hooks.done.tap('done', (stats: webpack.Stats) => {
+      compiler.hooks.done.tap('done', (stats) => {
         clearConsole();
-        const json: any = stats.toJson(); // different @types/webpack between react-dev-utils and grafana-toolkit
+        const json = stats.toJson();
         const output = formatWebpackMessages(json);
 
         if (!output.errors.length && !output.warnings.length) {
@@ -56,13 +55,13 @@ export const bundlePlugin = async ({ watch, production, preserveConsole }: Plugi
         }
       });
     } else {
-      compiler.run((err: Error, stats: webpack.Stats) => {
+      compiler.run((err, stats) => {
         if (err) {
           reject(err);
           return;
         }
 
-        if (stats.hasErrors()) {
+        if (stats?.hasErrors()) {
           stats.compilation.errors.forEach((e) => {
             console.log(e.message);
           });
@@ -71,7 +70,7 @@ export const bundlePlugin = async ({ watch, production, preserveConsole }: Plugi
           return;
         }
 
-        console.log('\n', stats.toString({ colors: true }), '\n');
+        console.log('\n', stats?.toString({ colors: true }), '\n');
         resolve();
       });
     }
