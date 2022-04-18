@@ -121,11 +121,7 @@ export class CloudWatchVariableSupport extends CustomVariableSupport<CloudWatchD
     if (!attributeName) {
       return [];
     }
-    let filterJson = {};
-    if (ec2Filters) {
-      filterJson = JSON.parse(ec2Filters);
-    }
-    const values = await this.datasource.getEc2InstanceAttribute(region, attributeName, filterJson);
+    const values = await this.datasource.getEc2InstanceAttribute(region, attributeName, ec2Filters ?? {});
     return values.map((s: { label: string; value: string }) => ({
       text: s.label,
       value: s.value,
@@ -137,11 +133,7 @@ export class CloudWatchVariableSupport extends CustomVariableSupport<CloudWatchD
     if (!resourceType) {
       return [];
     }
-    let tagJson = {};
-    if (tags) {
-      tagJson = JSON.parse(tags);
-    }
-    const keys = await this.datasource.getResourceARNs(region, resourceType, tagJson);
+    const keys = await this.datasource.getResourceARNs(region, resourceType, tags ?? {});
     return keys.map((s: { label: string; value: string }) => ({
       text: s.label,
       value: s.value,
