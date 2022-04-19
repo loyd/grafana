@@ -1,8 +1,6 @@
-// @ts-ignore
 import chalk from 'chalk';
 import { program } from 'commander';
 import { execTask } from './utils/execTask';
-import { startTask } from './tasks/core.start';
 import { changelogTask } from './tasks/changelog';
 import { cherryPickTask } from './tasks/cherrypick';
 import { templateTask } from './tasks/template';
@@ -25,19 +23,6 @@ import { nodeVersionCheckerTask } from './tasks/nodeVersionChecker';
 export const run = (includeInternalScripts = false) => {
   if (includeInternalScripts) {
     program.option('-d, --depreciate <scripts>', 'Inform about npm script deprecation', (v) => v.split(','));
-    program
-      .command('core:start')
-      .option('-h, --hot', 'Run front-end with HRM enabled')
-      .option('-T, --noTsCheck', 'Run bundler without TS type checking')
-      .option('-t, --watchTheme', 'Watch for theme changes and regenerate variables.scss files')
-      .description('Starts Grafana front-end in development mode with watch enabled')
-      .action(async (cmd) => {
-        await execTask(startTask)({
-          watchThemes: cmd.watchTheme,
-          noTsCheck: cmd.noTsCheck,
-          hot: cmd.hot,
-        });
-      });
 
     program
       .command('package:build')
