@@ -1,6 +1,7 @@
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
+const browserslist = require('browserslist');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ReplaceInFileWebpackPlugin = require('replace-in-file-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
@@ -149,6 +150,12 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
     plugins.push(new HtmlWebpackPlugin());
   }
 
+  // use toolkit browserlist to babel/preset-env
+  const targets = browserslist(undefined, {
+    path: path.resolve(__dirname, '.browserslistrc'),
+    env: options.production ? 'production' : 'dev',
+  });
+
   return {
     mode: options.production ? 'production' : 'development',
     target: 'web',
@@ -209,7 +216,7 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async (options) => {
               cacheDirectory: true,
               cacheCompression: false,
               presets: [
-                [require.resolve('@babel/preset-env'), { modules: false }],
+                [require.resolve('@babel/preset-env'), { modules: false, debug: true, targets }],
                 [
                   require.resolve('@babel/preset-typescript'),
                   {
