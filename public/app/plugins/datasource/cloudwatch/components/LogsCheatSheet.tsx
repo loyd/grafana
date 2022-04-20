@@ -5,7 +5,7 @@ import Prism from 'prismjs';
 import tokenizer from '../syntax';
 import { flattenTokens } from '@grafana/ui/src/slate-plugins/slate-prism';
 import { css, cx } from '@emotion/css';
-import { CloudWatchQuery } from '../types';
+import { CloudWatchQuery, CloudWatchLogsQuery } from '../types';
 
 interface QueryExample {
   category: string;
@@ -223,12 +223,21 @@ export default class LogsCheatSheet extends PureComponent<
   }
 
   renderExpression(expr: string, keyPrefix: string) {
+    const existingQuery = this.props.queries.filter((x) => x.refId === this.props.refId)[0] as CloudWatchLogsQuery;
+
     return (
       <div
         className="cheat-sheet-item__example"
         key={expr}
-        onClick={(e) =>
-          this.onClickExample({ refId: 'A', expression: expr, queryMode: 'Logs', region: 'default', id: 'A' })
+        onClick={() =>
+          this.onClickExample({
+            refId: this.props.refId,
+            expression: expr,
+            queryMode: 'Logs',
+            region: 'default',
+            id: this.props.refId,
+            logGroupNames: existingQuery.logGroupNames,
+          })
         }
       >
         <pre>{renderHighlightedMarkup(expr, keyPrefix)}</pre>
